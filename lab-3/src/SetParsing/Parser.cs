@@ -1,6 +1,9 @@
 ﻿using SetParsing.Tokens;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
+using System.Linq;
+using System.Numerics;
 using System.Text.RegularExpressions;
 
 namespace SetParsing
@@ -10,25 +13,82 @@ namespace SetParsing
     /// </summary>
     public static class Parser
     {
-        private static readonly Regex complex = new Regex(@"(?<real>[+-]?\d+\.?\d*)(?<imaginary>[+-](\d+\.?\d*)?)i$",
+        private static readonly Regex complex = new(@"^(?<real>[+-]?\d+\.?\d*)(\s*)(?<imaginary>[+-](\s*\d+\.?\d*)?)[Ii]$",
+            RegexOptions.Compiled | RegexOptions.Singleline);
+
+        private static readonly Regex imaginary = new(@"^(?<imaginary>[+-]?(\d+\.?\d*)?)[Ii]$",
+            RegexOptions.Compiled | RegexOptions.Singleline);
+
+        private static readonly Regex real = new(@"^(?<real>[+-]?\d+\.?\d*)$",
+            RegexOptions.Compiled | RegexOptions.Singleline);
+
+        private static readonly Regex set = new(@"^\[(?<set>.*)\]$",
             RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
 
-        private static readonly Regex imaginary = new Regex(@"(?<imaginary>[+-]?(\d+\.?\d*)?)i$",
-            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+        /// <summary>
+        /// Parse string into .NET object.
+        /// <para>
+        /// See also: <seealso cref="ProcessLine(string)"/>,
+        /// <seealso cref=" Translate(TokenBase, ICollection{ArgumentException})"/>
+        /// </para>
+        /// </summary>
+        /// <typeparam name="T">Target type.</typeparam>
+        /// <param name="input">Input.</param>
+        /// <exception cref="AggregateException" />
+        /// <exception cref="InvalidCastException" />
+        public static T Parse<T>(string input)
+        {
+            var token = ProcessLine(input);
 
-        private static readonly Regex real = new Regex(@"(?<real>[+-]?\d+\.?\d*)$",
-            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+            var errors = new List<ArgumentException>();
+            var value = Translate(token, errors);
 
-        private static readonly Regex set = new Regex(@"\[(?<set>.*)\]$",
-            RegexOptions.Compiled | RegexOptions.Singleline | RegexOptions.IgnorePatternWhitespace);
+            if (!errors.Any())
+            {
+                return (T)value;
+            }
 
+            throw new AggregateException(errors);
+        }
+
+        /// <summary>
+        /// Translate token tree to an object.
+        /// List of objects:
+        /// <list type="number">
+        /// <item><see cref="decimal"/></item>
+        /// <item><see cref="Complex"/></item>
+        /// <item><see cref="Array"/></item>
+        /// </list>
+        /// </summary>
+        /// <param name="token">Token tree root.</param>
+        /// <param name="errors">Errors aggregate.</param>
+        /// <returns>Object representation.</returns>
+        /// <exception cref="ArgumentNullException"></exception>
+        /// <exception cref="NotImplementedException"></exception>
+        public static object Translate(TokenBase token, ICollection<ArgumentException> errors)
+        {
+            return token switch
+            {
+                RealNumberToken num => num.Value,
+                ComplexNumberToken cnum => new Complex(real: (double)cnum.Real, imaginary: (double)cnum.Imaginary),
+                SetToken set => Array.ConvertAll(set.Tokens, t => Translate(t, errors)),
+                ErrorToken val => SetError(val.Message),
+                _ => throw new NotImplementedException(),
+            };
+
+            object SetError(string message)
+            {
+                errors?.Add(new ArgumentException(message));
+                return null;
+            }
+        }
 
         /// <summary>
         /// Parse line. Generate token.
         /// </summary>
         /// <param name="line">Input.</param>
         /// <returns>Token.</returns>
-        public static TokenBase ParseLine(string line)
+        public static TokenBase ProcessLine(string line)
         {
             return line switch
             {
@@ -39,9 +99,10 @@ namespace SetParsing
                         _ => new ErrorToken("Real part is out of range."),
                     },
 
-                _ when complex.Match(line) is Match m && m.Success => (
-                    ParseLine(m.Groups["real"].Value),
-                    TryParseDecimal(m.Groups["imaginary"].Value)) switch
+                _ when complex.Match(line) is Match m && m.Success
+                    && m.Groups["real"].Value is var mReal
+                    && m.Groups["imaginary"].Value is var mImaginary =>
+                    (ProcessLine(mReal), TryParseDecimal(Regex.Replace(mImaginary, "\\s*", replacement: string.Empty))) switch
                     {
                         (RealNumberToken real, (true, var b)) => real.AddImaginaryPart(b),
                         (RealNumberToken real, (false, _)) => new ErrorToken("Imaginary part is out of range."),
@@ -58,26 +119,24 @@ namespace SetParsing
                 _ when set.Match(line) is Match m && m.Success =>
                     new SetToken(Array.ConvertAll(
                         m.Groups["set"].Value.Split(",", StringSplitOptions.RemoveEmptyEntries),
-                        ParseLine)
+                        converter: ProcessLine)
                     ),
 
-                { } => 
-                    new ErrorToken("Unknown token"),
-                
-                null =>
-                    throw new ArgumentNullException(nameof(line)),
+                _ => new ErrorToken("Unknown token"),
             };
         }
 
-        private static (bool, decimal) TryParseDecimal(string number) =>
-            number switch
+        private static (bool, decimal) TryParseDecimal(string number)
+        {
+            return number switch
             {
                 "-" => (true, -1m),
                 "+" => (true, 1m),
-                _ => (decimal.TryParse(number, 
-                        NumberStyles.AllowLeadingSign | NumberStyles.Float, 
-                        CultureInfo.InvariantCulture.NumberFormat, 
-                        out var parsed), parsed)
+                _ => (decimal.TryParse(number,
+                    style: NumberStyles.AllowLeadingSign | NumberStyles.Float,
+                    provider: CultureInfo.InvariantCulture.NumberFormat,
+                    result: out var parsed), parsed)
             };
+        }
     }
 }

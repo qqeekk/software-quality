@@ -7,7 +7,10 @@ namespace SetParsing.Tokens
     /// </summary>
     class RealNumberToken : TokenBase
     {
-        private readonly decimal number;
+        /// <summary>
+        /// Real value.
+        /// </summary>
+        public decimal Value { get; }
 
         /// <summary>
         /// Constructor.
@@ -15,7 +18,7 @@ namespace SetParsing.Tokens
         /// <param name="number">Number.</param>
         public RealNumberToken(decimal number)
         {
-            this.number = number;
+            this.Value = number;
         }
 
         /// <summary>
@@ -23,26 +26,26 @@ namespace SetParsing.Tokens
         /// </summary>
         /// <param name="imaginary">Imaginary part.</param>
         public ComplexNumberToken AddImaginaryPart(decimal imaginary)
-            => new ComplexNumberToken(number, imaginary);
+            => new(Value, imaginary);
 
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
             return base.Equals(obj)
                 && obj is RealNumberToken cplx
-                && cplx.number == number;
+                && cplx.Value == Value;
         }
 
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return HashCode.Combine(base.GetHashCode(), number);
+            return HashCode.Combine(base.GetHashCode(), Value);
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"real {number}";
+            return $"real {Value}";
         }
     }
 }

@@ -8,14 +8,17 @@ namespace SetParsing.Tokens
     /// </summary>
     class SetToken : TokenBase
     {
-        private readonly TokenBase[] tokens;
+        /// <summary>
+        /// Element tokens.
+        /// </summary>
+        public TokenBase[] Tokens { get; }
 
         /// <summary>
         /// Constructor.
         /// </summary>
         public SetToken(params TokenBase[] tokens)
         {
-            this.tokens = tokens;
+            this.Tokens = tokens;
         }
 
         /// <inheritdoc />
@@ -23,19 +26,19 @@ namespace SetParsing.Tokens
         {
             return base.Equals(obj)
                 && obj is SetToken set
-                && Enumerable.SequenceEqual(tokens, set.tokens);
+                && Enumerable.SequenceEqual(Tokens, set.Tokens);
         }
 
         /// <inheritdoc />
         public override int GetHashCode()
         {
-            return tokens.Aggregate(base.GetHashCode(), HashCode.Combine);
+            return Tokens.Aggregate(base.GetHashCode(), HashCode.Combine);
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"set {string.Join(" ", tokens.Select(t => $"({t})"))}";
+            return $"set {string.Join(" ", Tokens.Select(t => $"({t})"))}";
         }
     }
 }

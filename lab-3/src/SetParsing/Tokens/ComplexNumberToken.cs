@@ -5,10 +5,17 @@ namespace SetParsing.Tokens
     /// <summary>
     /// Complex number.
     /// </summary>
-    class ComplexNumberToken : TokenBase
+    public class ComplexNumberToken : TokenBase
     {
-        protected readonly decimal Real;
-        protected readonly decimal Imaginary;
+        /// <summary>
+        /// Real part.
+        /// </summary>
+        public decimal Real { get; }
+
+        /// <summary>
+        /// Imaginary part.
+        /// </summary>
+        public decimal Imaginary { get; }
 
         /// <summary>
         /// Constructor.

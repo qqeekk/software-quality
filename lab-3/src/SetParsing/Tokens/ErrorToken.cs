@@ -1,18 +1,27 @@
 ﻿namespace SetParsing.Tokens
 {
-    class ErrorToken : TokenBase
+    /// <summary>
+    /// Error token.
+    /// </summary>
+    public class ErrorToken : TokenBase
     {
-        private readonly string message;
+        /// <summary>
+        /// Error message.
+        /// </summary>
+        public string Message { get; }
 
+        /// <summary>
+        /// Constructor.
+        /// </summary>
         public ErrorToken(string message)
         {
-            this.message = message;
+            this.Message = message;
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
-            return $"error \"{message}\"";
+            return $"error \"{Message}\"";
         }
     }
 }
