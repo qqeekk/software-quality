@@ -9,6 +9,31 @@ namespace SetParsing.Tests
     {
         private static readonly string Large = new(c: '5', count: 50);
 
+        public static IEnumerable<object[]> TokenEqualityData()
+        {
+            yield return new object[] { R(2), R(2), true };
+            yield return new object[] { R(2), R(1.99999999999999999999999999999999M), true };
+            yield return new object[] { C(0, 3), C(0, 3), true };
+            yield return new object[] { C(1, 3), C(1, 3), true };
+            yield return new object[] { C(1, 0), R(1), false };
+            yield return new object[] { R(1), C(1, 0), false };
+            yield return new object[] { R(2), null, false };
+            yield return new object[] { C(2, 5), null, false };
+
+            yield return new object[] { E(ErrorCode.Unknown), E(ErrorCode.Unknown), true };
+            yield return new object[] { E(ErrorCode.Unknown), E(ErrorCode.OutOfRange), false };
+            yield return new object[] { E(ErrorCode.Unknown), S(), false };
+            yield return new object[] { E(ErrorCode.Unknown), null, false };
+
+            yield return new object[] { S(), S(), true };
+            yield return new object[] { S(R(1)), S(R(1)), true };
+            yield return new object[] { R(1), S(R(1)), false };
+            yield return new object[] { S(R(1)), R(1), false };
+            yield return new object[] { S(), S(E(ErrorCode.Unknown)), false };
+            yield return new object[] { S(E(ErrorCode.Unknown)), S(E(ErrorCode.OutOfRange)), false };
+            yield return new object[] { S(), null, false };
+        }
+
         public static IEnumerable<object[]> ParseAtomicData()
         {
             yield return new object[] { "", E(ErrorCode.Unknown) };

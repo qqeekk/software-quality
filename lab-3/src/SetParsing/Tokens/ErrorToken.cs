@@ -41,9 +41,9 @@ namespace SetParsing.Tokens
         /// <inheritdoc />
         public override bool Equals(object obj)
         {
-            return obj is ErrorToken token &&
-                base.Equals(obj) &&
-                Code == token.Code;
+            return base.Equals(obj)
+                && obj is ErrorToken token
+                && Code == token.Code;
         }
 
         /// <inheritdoc />

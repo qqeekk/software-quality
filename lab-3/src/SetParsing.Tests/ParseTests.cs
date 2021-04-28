@@ -11,6 +11,21 @@ namespace SetParsing.Tests
     public partial class ParseTests
     {
         [Theory]
+        [MemberData(nameof(TokenEqualityData))]
+        public void TokenEqualityTest(TokenBase a, TokenBase b, bool equal)
+        {
+            if (equal)
+            {
+                Assert.Equal(a, b);
+                Assert.Equal(a.GetHashCode(), b.GetHashCode());
+            }
+            else
+            {
+                Assert.NotEqual(a, b);
+            }
+        }
+
+        [Theory]
         [MemberData(nameof(ParseAtomicData))]
         [MemberData(nameof(ParseSetData))]
         public void ProcessLineTest(string atomic, TokenBase result)
