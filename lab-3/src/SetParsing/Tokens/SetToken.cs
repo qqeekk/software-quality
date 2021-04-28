@@ -6,7 +6,7 @@ namespace SetParsing.Tokens
     /// <summary>
     /// Set token.
     /// </summary>
-    class SetToken : TokenBase
+    public class SetToken : TokenBase
     {
         /// <summary>
         /// Element tokens.

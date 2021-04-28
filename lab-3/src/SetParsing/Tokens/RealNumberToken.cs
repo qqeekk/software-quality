@@ -5,7 +5,7 @@ namespace SetParsing.Tokens
     /// <summary>
     /// Real number token.
     /// </summary>
-    class RealNumberToken : TokenBase
+    public class RealNumberToken : TokenBase
     {
         /// <summary>
         /// Real value.

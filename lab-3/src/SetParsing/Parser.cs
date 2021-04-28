@@ -13,7 +13,7 @@ namespace SetParsing
     /// </summary>
     public static class Parser
     {
-        private static readonly Regex complex = new(@"^(?<real>[+-]?\d+\.?\d*)(\s*)(?<imaginary>[+-](\s*\d+\.?\d*)?)[Ii]$",
+        private static readonly Regex complex = new(@"^(?<real>[+-]?\d+\.?\d*)(?<imaginary>[+-](\d+\.?\d*)?)[Ii]$",
             RegexOptions.Compiled | RegexOptions.Singleline);
 
         private static readonly Regex imaginary = new(@"^(?<imaginary>[+-]?(\d+\.?\d*)?)[Ii]$",
@@ -65,6 +65,7 @@ namespace SetParsing
         /// <returns>Object representation.</returns>
         /// <exception cref="ArgumentNullException"></exception>
         /// <exception cref="NotImplementedException"></exception>
+        /// <exception cref="ArgumentNullException"></exception>
         public static object Translate(TokenBase token, ICollection<ArgumentException> errors)
         {
             return token switch
@@ -73,7 +74,8 @@ namespace SetParsing
                 ComplexNumberToken cnum => new Complex(real: (double)cnum.Real, imaginary: (double)cnum.Imaginary),
                 SetToken set => Array.ConvertAll(set.Tokens, t => Translate(t, errors)),
                 ErrorToken val => SetError(val.Message),
-                _ => throw new NotImplementedException(),
+                { } => throw new NotImplementedException(),
+                null => throw new ArgumentNullException(nameof(token)),
             };
 
             object SetError(string message)
@@ -96,16 +98,16 @@ namespace SetParsing
                     TryParseDecimal(m.Groups["real"].Value) switch
                     {
                         (true, var a) => new RealNumberToken(a),
-                        _ => new ErrorToken("Real part is out of range."),
+                        _ => new ErrorToken(ErrorCode.OutOfRange, "Real part is out of range."),
                     },
 
                 _ when complex.Match(line) is Match m && m.Success
                     && m.Groups["real"].Value is var mReal
                     && m.Groups["imaginary"].Value is var mImaginary =>
-                    (ProcessLine(mReal), TryParseDecimal(Regex.Replace(mImaginary, "\\s*", replacement: string.Empty))) switch
+                    (ProcessLine(mReal), TryParseDecimal(mImaginary)) switch
                     {
                         (RealNumberToken real, (true, var b)) => real.AddImaginaryPart(b),
-                        (RealNumberToken real, (false, _)) => new ErrorToken("Imaginary part is out of range."),
+                        (RealNumberToken real, (false, _)) => new ErrorToken(ErrorCode.OutOfRange, "Imaginary part is out of range."),
                         (var error, _) => error,
                     },
 
@@ -113,16 +115,16 @@ namespace SetParsing
                     TryParseDecimal(m.Groups["imaginary"].Value) switch
                     {
                         (true, var b) => new ComplexNumberToken(0m, b),
-                        _ => new ErrorToken("Imaginary part is out of range."),
+                        _ => new ErrorToken(ErrorCode.OutOfRange, "Imaginary part is out of range."),
                     },
 
                 _ when set.Match(line) is Match m && m.Success =>
                     new SetToken(Array.ConvertAll(
                         m.Groups["set"].Value.Split(",", StringSplitOptions.RemoveEmptyEntries),
-                        converter: ProcessLine)
+                        converter: v => ProcessLine(v.Trim()))
                     ),
 
-                _ => new ErrorToken("Unknown token"),
+                _ => new ErrorToken(ErrorCode.Unknown, "Unknown token"),
             };
         }
 
@@ -131,7 +133,7 @@ namespace SetParsing
             return number switch
             {
                 "-" => (true, -1m),
-                "+" => (true, 1m),
+                "+" or "" => (true, 1m),
                 _ => (decimal.TryParse(number,
                     style: NumberStyles.AllowLeadingSign | NumberStyles.Float,
                     provider: CultureInfo.InvariantCulture.NumberFormat,

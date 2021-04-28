@@ -1,10 +1,23 @@
-﻿namespace SetParsing.Tokens
+﻿using System;
+
+namespace SetParsing.Tokens
 {
+    /// <summary>
+    /// Error code.
+    /// </summary>
+    public enum ErrorCode : short
+    {
+        OutOfRange,
+        Unknown,
+    }
+
     /// <summary>
     /// Error token.
     /// </summary>
     public class ErrorToken : TokenBase
     {
+        public ErrorCode Code { get; }
+
         /// <summary>
         /// Error message.
         /// </summary>
@@ -13,15 +26,30 @@
         /// <summary>
         /// Constructor.
         /// </summary>
-        public ErrorToken(string message)
+        public ErrorToken(ErrorCode code, string message = null)
         {
-            this.Message = message;
+            Code = code;
+            this.Message = message ?? string.Empty;
         }
 
         /// <inheritdoc />
         public override string ToString()
         {
             return $"error \"{Message}\"";
+        }
+
+        /// <inheritdoc />
+        public override bool Equals(object obj)
+        {
+            return obj is ErrorToken token &&
+                base.Equals(obj) &&
+                Code == token.Code;
+        }
+
+        /// <inheritdoc />
+        public override int GetHashCode()
+        {
+            return HashCode.Combine(base.GetHashCode(), Code);
         }
     }
 }
