@@ -3,9 +3,9 @@ using System.Collections.Generic;
 using System.Diagnostics.CodeAnalysis;
 using System.Linq;
 
-namespace SetParsing.Tests
+namespace SetParsing
 {
-    internal class StructuralEqualityComparer : IEqualityComparer<object>
+    public class StructuralEqualityComparer : IEqualityComparer<object>
     {
         public new bool Equals(object x, object y)
         {

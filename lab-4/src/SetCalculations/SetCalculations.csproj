@@ -4,4 +4,9 @@
     <TargetFramework>net5.0</TargetFramework>
   </PropertyGroup>
 
+  <ItemGroup>
+    <ProjectReference Include="..\..\..\lab-2\src\SetOperations\SetOperations.csproj" />
+    <ProjectReference Include="..\..\..\lab-3\src\SetParsing\SetParsing.csproj" />
+  </ItemGroup>
+
 </Project>

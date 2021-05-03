@@ -57,7 +57,7 @@ namespace SetParsing
         /// <list type="number">
         /// <item><see cref="decimal"/></item>
         /// <item><see cref="Complex"/></item>
-        /// <item><see cref="Array"/></item>
+        /// <item><see cref="IReadOnlySet{object}"/></item>
         /// </list>
         /// </summary>
         /// <param name="token">Token tree root.</param>
@@ -72,7 +72,7 @@ namespace SetParsing
             {
                 RealNumberToken num => num.Value,
                 ComplexNumberToken cnum => new Complex(real: (double)cnum.Real, imaginary: (double)cnum.Imaginary),
-                SetToken set => Array.ConvertAll(set.Tokens, t => Translate(t, errors)),
+                SetToken set => MakeSet(Array.ConvertAll(set.Tokens, t => Translate(t, errors))),
                 ErrorToken val => SetError(val.Message),
                 { } => throw new NotImplementedException(),
                 null => throw new ArgumentNullException(nameof(token)),
@@ -139,6 +139,11 @@ namespace SetParsing
                     provider: CultureInfo.InvariantCulture.NumberFormat,
                     result: out var parsed), parsed)
             };
+        }
+
+        private static IReadOnlySet<object> MakeSet(IEnumerable<object> seq)
+        {
+            return new HashSet<object>(seq, new StructuralEqualityComparer());
         }
     }
 }
