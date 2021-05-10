@@ -1,9 +1,9 @@
 ﻿using SetCalculations.Adapters;
+using System;
 using System.Collections.Generic;
 
 namespace SetCalculations.Machine
 {
-
     public enum OpCodes
     {
         Intersection, // &
@@ -14,23 +14,43 @@ namespace SetCalculations.Machine
 
     public class OperatorState : IContinuable<IReadOnlySet<object>>
     {
-        private readonly Parser parser;
+        private readonly Parser argumentParser;
 
         public IReadOnlySet<object> State { get; }
 
         public OperatorState(Parser parser, IReadOnlySet<object> state)
         {
-            this.parser = parser;
+            this.argumentParser = parser;
             State = state;
         }
 
         public IState<IReadOnlySet<object>> Next(string param)
         {
-            if (string.IsNullOrEmpty(param))
+            if (EndState.IsValidState(param))
             {
                 return new EndState(State);
             }
 
+            if (TryParse(param, out var op))
+            {
+                return new RightArgumentState(argumentParser, State, op);
+            }
+
+            if (argumentParser.TryParse(param, out _, out _))
+            {
+                return new ErrorState(State, new InvalidOperationException("Infix operator missing."));
+            }
+
+            return new ErrorState(State, new InvalidOperationException($"Unknown operator: \"{param}\"."));
+        }
+
+        internal static bool IsValidState(string param)
+        {
+            return TryParse(param, out _);
+        }
+
+        private static bool TryParse(string param, out OpCodes op)
+        {
             var code = param.Trim() switch
             {
                 "&" => OpCodes.Intersection,
@@ -40,12 +60,8 @@ namespace SetCalculations.Machine
                 _ => (OpCodes?)null,
             };
 
-            if (code is OpCodes op)
-            {
-                return new RightArgumentState(parser, State, op);
-            }
-
-            return new ErrorState(State, new[] { $"Unknown operator: \"{param}\"." });
+            op = code ?? default;
+            return code.HasValue;
         }
     }
 }

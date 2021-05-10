@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace SetCalculations.Machine
 {
@@ -6,9 +7,17 @@ namespace SetCalculations.Machine
     {
         public IReadOnlySet<object> State { get; }
 
-        public IEnumerable<string> Errors { get; }
+        public IEnumerable<Exception> Errors { get; }
 
-        public ErrorState(IReadOnlySet<object> previousState, IEnumerable<string> errors)
+        internal ErrorState(
+            IReadOnlySet<object> previousState,
+            Exception message) : this(previousState, new[] { message })
+        { 
+        }
+
+        public ErrorState(
+            IReadOnlySet<object> previousState,
+            IEnumerable<Exception> errors)
         {
             State = previousState;
             Errors = errors;

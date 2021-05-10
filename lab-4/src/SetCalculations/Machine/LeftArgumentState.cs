@@ -1,7 +1,6 @@
 ﻿using SetCalculations.Adapters;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SetCalculations.Machine
 {
@@ -18,16 +17,19 @@ namespace SetCalculations.Machine
 
         public IState<IReadOnlySet<object>> Next(string param)
         {
-            try
+            if (EndState.IsValidState(param))
             {
-                var arg = parser.Parse(param);
-                var set = arg as IReadOnlySet<object> ?? new[] { arg }.ToHashSet();
-                return new OperatorState(parser, set);
+                return new EndState(State);
             }
-            catch (AggregateException agg)
+
+            if (OperatorState.IsValidState(param))
             {
-                return new ErrorState(State, agg.InnerExceptions.Select(e => e.Message).ToList());
+                return new ErrorState(State, new InvalidOperationException($"Unexpected operator: \"{param}\"."));
             }
+
+            return parser.TryParse(param, out var set, out var errors)
+                ? new OperatorState(parser, set)
+                : new ErrorState(State, errors);
         }
     }
 }

@@ -17,22 +17,23 @@ namespace SetCalculations
 
         public IReadOnlySet<object> Calculate(IEnumerable<string> line)
         {
-            var cursor = new LeftArgumentState(parser) as IContinuable<IReadOnlySet<object>>;
-
+            IContinuable<IReadOnlySet<object>> cursor = new LeftArgumentState(parser);
             foreach (var word in line)
             {
                 switch (cursor.Next(word))
                 {
-                    case EndState state:
-                        return state.State;
-
-                    case ErrorState state:
-                        var innerExceptions = state.Errors.Select(e => new ArgumentException(e));
-                        throw new AggregateException(innerExceptions);
-
                     case IContinuable<IReadOnlySet<object>> state:
                         cursor = state;
                         continue;
+
+                    case EndState state:
+                        return state.State;
+
+                    case ErrorState state when state.Errors.Count() == 1 && state.Errors.First() is InvalidOperationException ex:
+                        throw new InvalidOperationException(cursor.GetType().Name, ex);
+
+                    case ErrorState state:
+                        throw new AggregateException(cursor.GetType().Name, state.Errors);
                 }
             }
 

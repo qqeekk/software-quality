@@ -1,11 +1,10 @@
 ﻿using SetCalculations.Adapters;
 using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace SetCalculations.Machine
 {
-    class RightArgumentState : IContinuable<IReadOnlySet<object>>
+    public class RightArgumentState : IContinuable<IReadOnlySet<object>>
     {
         private readonly Parser parser;
         private readonly OpCodes op;
@@ -20,18 +19,23 @@ namespace SetCalculations.Machine
 
         public IState<IReadOnlySet<object>> Next(string param)
         {
-            try
+            if (EndState.IsValidState(param))
             {
-                var arg = parser.Parse(param);
-                var set = arg as IReadOnlySet<object> ?? new[] { arg }.ToHashSet();
+                return new ErrorState(State, new InvalidOperationException("Unexpected EOF."));
+            }
 
+            if (parser.TryParse(param, out var set, out var errors))
+            {
                 var next = Calculator.Apply(op, State, set);
                 return new OperatorState(parser, next);
             }
-            catch (AggregateException agg)
+
+            if (OperatorState.IsValidState(param))
             {
-                return new ErrorState(State, agg.InnerExceptions.Select(e => e.Message).ToList());
+                return new ErrorState(State, new InvalidOperationException($"Unexpected operator: \"{param}\"."));
             }
+
+            return new ErrorState(State, errors);
         }
     }
 }
